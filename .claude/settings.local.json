@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /c/Users/MatKa/projects/Telegram-exposer/src /c/Users/MatKa/projects/Telegram-exposer/reports)",
+      "Bash(touch /c/Users/MatKa/projects/Telegram-exposer/reports/.gitkeep)",
+      "Bash(.venv/Scripts/python -c \"import ast, pathlib; [ast.parse\\(p.read_text\\('utf-8'\\)\\) for p in pathlib.Path\\('src'\\).glob\\('*.py'\\) if p.stem != '__init__']; print\\('All src modules parse OK'\\)\")",
+      "Bash(.venv/Scripts/python -c \"\nimport ast, pathlib\nfor p in pathlib.Path\\('src'\\).glob\\('*.py'\\):\n    if p.stem == '__init__': continue\n    ast.parse\\(p.read_text\\('utf-8'\\)\\)\n    print\\(f'OK  {p}'\\)\nprint\\('main.py...'\\)\nast.parse\\(pathlib.Path\\('main.py'\\).read_text\\('utf-8'\\)\\)\nprint\\('OK  main.py'\\)\n\")",
+      "Bash(.venv/Scripts/python -c \"\nimport ast, pathlib\nfor p in sorted\\(pathlib.Path\\('src'\\).glob\\('*.py'\\)\\):\n    if p.stem == '__init__': continue\n    ast.parse\\(p.read_text\\('utf-8'\\)\\)\n    print\\(f'OK  {p}'\\)\nast.parse\\(pathlib.Path\\('main.py'\\).read_text\\('utf-8'\\)\\)\nprint\\('OK  main.py'\\)\n\")"
+    ]
+  }
+}
