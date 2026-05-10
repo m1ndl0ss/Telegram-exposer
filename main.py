@@ -97,9 +97,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 async def run(args: argparse.Namespace) -> None:
     """Orchestrate all OSINT modules and display collected data."""
+    from src.bio_link_scraper import extract_url_from_bio, scrape_bio_link
     from src.data_display import build_data, display_rich, save_html, save_json
     from src.telegram_osint import fetch_profile
-    from src.username_enum import run_sherlock
+    from src.username_enum import _leet_variants, run_sherlock_all
 
     identifier = args.username or args.phone
 
@@ -112,13 +113,26 @@ async def run(args: argparse.Namespace) -> None:
     effective_username = args.username or (tg_profile.username if tg_profile else None)
     display_name = tg_profile.display_name if tg_profile else None
 
-    # ── Sherlock username enumeration ─────────────────────────────────────────
+    # ── Sherlock username enumeration (primary + leet variants) ──────────────
     enum_result = None
     if effective_username and not args.skip_sherlock:
-        console.print(f"[dim][*] Running Sherlock for username:[/] [cyan]{effective_username}[/]")
-        enum_result = run_sherlock(effective_username)
+        leet_preview = ", ".join(_leet_variants(effective_username)) or "none"
+        console.print(
+            f"[dim][*] Running Sherlock for:[/] [cyan]{effective_username}[/]"
+            f"[dim]  (leet variants: {leet_preview})[/]"
+        )
+        enum_result = run_sherlock_all(effective_username)
     elif args.skip_sherlock:
         console.print("[dim][*] Sherlock skipped (--skip-sherlock).[/]")
+
+    # ── Bio link scraping ─────────────────────────────────────────────────────
+    bio_link_result = None
+    bio_text = tg_profile.bio if tg_profile else None
+    if bio_text:
+        bio_url = extract_url_from_bio(bio_text)
+        if bio_url:
+            console.print(f"[dim][*] Scraping bio link:[/] [cyan]{bio_url}[/]")
+            bio_link_result = scrape_bio_link(bio_url)
 
     # ── Enrichment modules ────────────────────────────────────────────────────
     dork_result = wayback_result = github_result = reddit_result = None
@@ -165,6 +179,7 @@ async def run(args: argparse.Namespace) -> None:
         identifier,
         tg=tg_profile,
         enum=enum_result,
+        bio_link=bio_link_result,
         dorks=dork_result,
         wayback=wayback_result,
         github=github_result,

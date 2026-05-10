@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "tool": "Telegram-Exposer (academic research)",
+    "generated_at": "2026-05-10T11:06:12.166695+00:00",
+    "identifier": "mindl0ss"
+  },
+  "telegram_profile": {
+    "user_id": 1817637072,
+    "display_name": "mindl0ss",
+    "username": "mindl0ss",
+    "phone": "31611796015",
+    "bio": "kandalintsev.com",
+    "profile_photo_url": null,
+    "last_seen": "UserStatusOffline",
+    "is_bot": false,
+    "restricted": false,
+    "restriction_reasons": [],
+    "raw_errors": []
+  },
+  "username_enumeration": {
+    "username": "mindl0ss",
+    "platforms": [],
+    "error": null
+  },
+  "google_dorks": {
+    "queries": [
+      {
+        "query": "\"mindl0ss\" site:linkedin.com",
+        "hits": []
+      },
+      {
+        "query": "\"mindl0ss\" site:github.com",
+        "hits": []
+      },
+      {
+        "query": "\"mindl0ss\" email",
+        "hits": []
+      },
+      {
+        "query": "\"mindl0ss\" filetype:pdf",
+        "hits": []
+      },
+      {
+        "query": "\"mindl0ss\" \"mindl0ss\"",
+        "hits": []
+      }
+    ],
+    "error": null
+  },
+  "wayback": {
+    "records": [
+      {
+        "platform": "Telegram (t.me)",
+        "checked_url": "https://t.me/mindl0ss",
+        "earliest_date": null,
+        "latest_snapshot_url": null,
+        "total_sampled": 0
+      }
+    ],
+    "error": null
+  },
+  "github": {
+    "name": null,
+    "email": null,
+    "bio": null,
+    "company": null,
+    "location": null,
+    "blog": null,
+    "public_repos": 0,
+    "followers": 0,
+    "commit_emails": [],
+    "not_found": false,
+    "error": null
+  },
+  "reddit": {
+    "account_age_days": 1192,
+    "comment_karma": 183,
+    "post_karma": 589,
+    "verified_email": true,
+    "found_emails": [],
+    "found_phones": [],
+    "found_locations": [],
+    "not_found": false,
+    "error": null
+  }
+}

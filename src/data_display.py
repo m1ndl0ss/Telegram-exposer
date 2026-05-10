@@ -76,6 +76,7 @@ def build_data(
     wayback=None,
     github=None,
     reddit=None,
+    bio_link=None,
 ) -> dict:
     """Assemble all module outputs into a single report dict."""
     return {
@@ -86,6 +87,7 @@ def build_data(
         },
         "telegram_profile":     _to_dict(tg),
         "username_enumeration": _to_dict(enum),
+        "bio_link":             _to_dict(bio_link),
         "google_dorks":         _to_dict(dorks),
         "wayback":              _to_dict(wayback),
         "github":               _to_dict(github),
@@ -153,6 +155,44 @@ def _html_telegram_section(tg: dict) -> str:
     return (
         _h2("Telegram Profile", "telegram") +
         "<table><thead><tr><th>Field</th><th>Visibility</th><th>Value</th></tr></thead>"
+        f"<tbody>{rows}</tbody></table></section>"
+    )
+
+
+def _html_bio_link_section(bio: dict) -> str:
+    if not bio:
+        return ""
+    if bio.get("error"):
+        return (
+            _h2("Biography Link", "bio-link") +
+            f"<p class='note'>Source: <span class='mono'>{bio.get('source_url','')}</span></p>"
+            f"<p class='warn'>{bio['error']}</p></section>"
+        )
+    rows = ""
+    for label, val in [
+        ("Source URL",       bio.get("source_url")),
+        ("Final URL",        bio.get("final_url")),
+        ("Page title",       bio.get("page_title")),
+        ("Meta description", bio.get("meta_description")),
+    ]:
+        if val:
+            rows += f"<tr><td>{label}</td><td>{val}</td></tr>\n"
+    for label, items in [
+        ("Emails found",  bio.get("emails") or []),
+        ("Phones found",  bio.get("phones") or []),
+    ]:
+        if items:
+            joined = ", ".join(str(i) for i in items)
+            rows += f"<tr><td class='warn'>{label}</td><td>{joined}</td></tr>\n"
+    social = bio.get("social_links") or []
+    if social:
+        links = " &nbsp; ".join(
+            f"<a href='{s['url']}' target='_blank'>{s['platform']}</a>" for s in social
+        )
+        rows += f"<tr><td>Social links</td><td>{links}</td></tr>\n"
+    return (
+        _h2("Biography Link", "bio-link") +
+        "<table><thead><tr><th>Field</th><th>Value</th></tr></thead>"
         f"<tbody>{rows}</tbody></table></section>"
     )
 
@@ -299,33 +339,48 @@ _HTML_CSS = """
   .warn { color: #f85149; }
   .snippet { color: #8b949e; font-size: .8rem; }
   .mono { font-family: monospace; font-size: .8rem; color: #8b949e; }
+  code { font-family: monospace; font-size: .8rem; background: #161b22;
+         padding: 1px 5px; border-radius: 3px; color: #e2a96e; }
   footer { margin-top: 3rem; border-top: 1px solid #30363d; padding-top: 1rem;
            font-size: .8rem; color: #484f58; }
 """
 
 
 def _render_html(data: dict) -> str:
-    meta   = data["meta"]
-    tg     = data.get("telegram_profile") or {}
-    en     = data.get("username_enumeration") or {}
-    dorks  = data.get("google_dorks")
-    wb     = data.get("wayback")
-    gh     = data.get("github")
-    reddit = data.get("reddit")
+    meta     = data["meta"]
+    tg       = data.get("telegram_profile") or {}
+    en       = data.get("username_enumeration") or {}
+    dorks    = data.get("google_dorks")
+    wb       = data.get("wayback")
+    gh       = data.get("github")
+    reddit   = data.get("reddit")
+    bio_link = data.get("bio_link")
 
     # Cross-platform presence section
     found = [p for p in (en.get("platforms") or []) if p.get("found")]
+    variants_searched = en.get("variants_searched") or []
     if en.get("error"):
         platform_body = f"<p class='note'>{en['error']}</p>"
     elif found:
         rows = "".join(
             f"<tr><td>{p['platform']}</td>"
-            f"<td><a href='{p['url']}' target='_blank'>{p['url']}</a></td></tr>\n"
+            f"<td><a href='{p['url']}' target='_blank'>{p['url']}</a></td>"
+            f"<td><span class='mono'>{p.get('variant', '')}</span></td></tr>\n"
             for p in found
         )
+        variants_note = ""
+        if variants_searched:
+            variants_note = (
+                f"<p class='note' style='margin-bottom:.5rem'>"
+                f"Leet variants also searched: "
+                + ", ".join(f"<code>{v}</code>" for v in variants_searched)
+                + "</p>"
+            )
         platform_body = (
+            f"{variants_note}"
             f"<p style='margin-bottom:.75rem'>Found on <strong>{len(found)}</strong> platform(s).</p>"
-            f"<table><thead><tr><th>Platform</th><th>URL</th></tr></thead><tbody>{rows}</tbody></table>"
+            "<table><thead><tr><th>Platform</th><th>URL</th><th>Found via</th></tr></thead>"
+            f"<tbody>{rows}</tbody></table>"
         )
     else:
         platform_body = "<p class='note'>No platforms found (or Sherlock was skipped).</p>"
@@ -355,6 +410,7 @@ def _render_html(data: dict) -> str:
   {platform_body}
 </section>
 
+{_html_bio_link_section(bio_link)}
 {_html_dorks_section(dorks)}
 {_html_wayback_section(wb)}
 {_html_github_section(gh)}
@@ -368,13 +424,14 @@ def _render_html(data: dict) -> str:
 
 def display_rich(data: dict) -> None:
     """Render all collected data to the terminal using Rich panels and tables."""
-    meta   = data["meta"]
-    tg     = data.get("telegram_profile") or {}
-    en     = data.get("username_enumeration") or {}
-    dorks  = data.get("google_dorks")
-    wb     = data.get("wayback")
-    gh     = data.get("github")
-    reddit = data.get("reddit")
+    meta     = data["meta"]
+    tg       = data.get("telegram_profile") or {}
+    en       = data.get("username_enumeration") or {}
+    dorks    = data.get("google_dorks")
+    wb       = data.get("wayback")
+    gh       = data.get("github")
+    reddit   = data.get("reddit")
+    bio_link = data.get("bio_link")
 
     console.print()
     console.print(Panel(
@@ -405,18 +462,50 @@ def display_rich(data: dict) -> None:
         reasons = ", ".join(tg.get("restriction_reasons") or ["unspecified"])
         console.print(f"  [yellow]⚠ Platform-restricted:[/] {reasons}\n")
 
+    # ── Bio link ──────────────────────────────────────────────────────────────
+    if bio_link:
+        if bio_link.get("error"):
+            bl_content: Any = Text(
+                f"{bio_link.get('source_url','')}  —  {bio_link['error']}", style="yellow"
+            )
+        else:
+            blt = Table(show_header=True, header_style="bold cyan", border_style="dim",
+                        expand=True, show_lines=True)
+            blt.add_column("Field", style="white",    min_width=20)
+            blt.add_column("Value", style="cyan dim")
+            for label, val in [
+                ("Source URL",       bio_link.get("source_url")),
+                ("Page title",       bio_link.get("page_title")),
+                ("Meta description", bio_link.get("meta_description")),
+            ]:
+                if val:
+                    blt.add_row(label, str(val))
+            for addr in bio_link.get("emails") or []:
+                blt.add_row(Text("Email found", style="bold yellow"), Text(addr, style="bold yellow"))
+            for phone in bio_link.get("phones") or []:
+                blt.add_row(Text("Phone found", style="bold yellow"), Text(phone, style="bold yellow"))
+            for sl in bio_link.get("social_links") or []:
+                blt.add_row(sl["platform"], sl["url"])
+            bl_content = blt
+        console.print(Panel(bl_content, title="[bold cyan]BIOGRAPHY LINK[/]", border_style="cyan"))
+
     # ── Cross-platform presence ───────────────────────────────────────────────
     found = [p for p in (en.get("platforms") or []) if p.get("found")]
+    variants_searched = en.get("variants_searched") or []
     if en.get("error"):
         cp_content: Any = Text(en["error"], style="dim")
     elif found:
         pt = Table(show_header=True, header_style="bold cyan", border_style="dim",
                    expand=True, show_lines=True)
-        pt.add_column("Platform", style="white",   min_width=24)
-        pt.add_column("URL",      style="cyan dim")
+        pt.add_column("Platform",  style="white",   min_width=22)
+        pt.add_column("URL",       style="cyan dim")
+        pt.add_column("Found via", style="dim",     min_width=14)
         for p in found:
-            pt.add_row(p["platform"], p["url"])
+            pt.add_row(p["platform"], p["url"], p.get("variant", ""))
         cp_content = pt
+        if variants_searched:
+            also = ", ".join(variants_searched)
+            console.print(f"  [dim]Leet variants searched:[/] [dim italic]{also}[/]")
     else:
         cp_content = Text("No platforms found (or Sherlock was skipped).", style="dim")
     console.print(Panel(
